@@ -1,0 +1,161 @@
+{
+  "fps": 30,
+  "width": 800,
+  "height": 480,
+  "reference": {
+    "id": "REF-001",
+    "name": "Fahrzeugmenü: Telefon verbinden",
+    "description": "Fokus wandert Navigation -> Medien -> Telefon (je 250 ms), Auswahl bei 1,8 s, Pop-up 'Telefon verbunden' blendet bei 2,0 s in 300 ms ein.",
+    "params": {}
+  },
+  "testcases": [
+    {
+      "id": "TC-001",
+      "name": "Unveränderte Referenz",
+      "expected": "OK",
+      "error_type": "none",
+      "edge_case": false,
+      "description": "Identische Kopie der Referenz (True Negative).",
+      "params": {}
+    },
+    {
+      "id": "TC-002",
+      "name": "Neu kodiert (stärkere Kompression)",
+      "expected": "OK",
+      "error_type": "none",
+      "edge_case": false,
+      "description": "Referenz mit höherer Kompression (CRF 32). Kompressionsartefakte sind keine Animationsabweichung.",
+      "params": {},
+      "post": { "crf": 32 }
+    },
+    {
+      "id": "TC-003",
+      "name": "Grenzfall: Pop-up 40 ms später",
+      "expected": "OK",
+      "error_type": "popup_delay",
+      "edge_case": true,
+      "description": "Pop-up startet 40 ms (gut 1 Frame) später. Liegt innerhalb der Toleranz und ist daher OK.",
+      "params": { "popupDelay": 40 }
+    },
+    {
+      "id": "TC-004",
+      "name": "Grenzfall: Highlight 30 ms langsamer",
+      "expected": "OK",
+      "error_type": "highlight_timing",
+      "edge_case": true,
+      "description": "Fokus-Highlight bewegt sich in 280 ms statt 250 ms. Liegt innerhalb der Toleranz und ist daher OK.",
+      "params": { "highlightMs": 280 }
+    },
+    {
+      "id": "TC-005",
+      "name": "Grenzfall: Aufnahmerauschen",
+      "expected": "OK",
+      "error_type": "none",
+      "edge_case": true,
+      "description": "Leichtes Bildrauschen wie beim Abfilmen eines Displays. Die Animation selbst ist korrekt.",
+      "params": {},
+      "post": { "noise": 6, "crf": 28 }
+    },
+    {
+      "id": "TC-010",
+      "name": "Pop-up 500 ms verzögert",
+      "expected": "NOK",
+      "error_type": "popup_delay",
+      "edge_case": false,
+      "description": "Pop-up startet bei 2,5 s statt 2,0 s.",
+      "params": { "popupDelay": 500 }
+    },
+    {
+      "id": "TC-011",
+      "name": "Pop-up 1200 ms verzögert",
+      "expected": "NOK",
+      "error_type": "popup_delay",
+      "edge_case": false,
+      "description": "Pop-up startet bei 3,2 s statt 2,0 s.",
+      "params": { "popupDelay": 1200 }
+    },
+    {
+      "id": "TC-012",
+      "name": "Highlight springt statt zu gleiten",
+      "expected": "NOK",
+      "error_type": "highlight_timing",
+      "edge_case": false,
+      "description": "Highlight-Bewegung dauert 0 ms statt 250 ms. Der Fokus springt, statt zu gleiten.",
+      "params": { "highlightMs": 0 }
+    },
+    {
+      "id": "TC-013",
+      "name": "Fokus erreicht Telefon zu spät",
+      "expected": "NOK",
+      "error_type": "highlight_timing",
+      "edge_case": false,
+      "description": "Zweiter Fokusschritt startet bei 1,7 s statt 1,2 s. Das Highlight kommt erst kurz vor der Auswahl an.",
+      "params": { "focusTimes": [600, 1700] }
+    },
+    {
+      "id": "TC-014",
+      "name": "Pop-up ohne Einblendung",
+      "expected": "NOK",
+      "error_type": "animation_speed",
+      "edge_case": false,
+      "description": "Pop-up erscheint schlagartig (0 ms statt 300 ms Einblendung).",
+      "params": { "popupMs": 0 }
+    },
+    {
+      "id": "TC-015",
+      "name": "Bild friert 500 ms ein",
+      "expected": "NOK",
+      "error_type": "frame_freeze",
+      "edge_case": false,
+      "description": "Anzeige hängt von 1,1 s bis 1,6 s (gleicher Frame wird wiederholt), danach springt sie auf den aktuellen Stand.",
+      "params": {},
+      "freeze": { "start_ms": 1100, "duration_ms": 500 }
+    },
+    {
+      "id": "TC-020",
+      "name": "Menüeintrag 'Klima' fehlt",
+      "expected": "NOK",
+      "error_type": "missing_element",
+      "edge_case": false,
+      "description": "Der vierte Menüeintrag wird nicht dargestellt, die Lücke bleibt.",
+      "params": { "hiddenItems": [3] }
+    },
+    {
+      "id": "TC-021",
+      "name": "Pop-up ohne Icon",
+      "expected": "NOK",
+      "error_type": "missing_element",
+      "edge_case": false,
+      "description": "Das grüne Bestätigungs-Icon im Pop-up fehlt.",
+      "params": { "popupIcon": false }
+    },
+    {
+      "id": "TC-022",
+      "name": "Falscher Pop-up-Text",
+      "expected": "NOK",
+      "error_type": "wrong_content",
+      "edge_case": false,
+      "description": "Pop-up zeigt 'Verbindung getrennt' statt 'Telefon verbunden'.",
+      "params": { "popupText": "Verbindung getrennt" }
+    },
+    {
+      "id": "TC-023",
+      "name": "Falsche Highlight-Farbe",
+      "expected": "NOK",
+      "error_type": "wrong_content",
+      "edge_case": false,
+      "description": "Fokus-Highlight ist rot statt blau.",
+      "params": { "highlightColor": "#d64545" }
+    },
+    {
+      "id": "TC-024",
+      "name": "Flackern",
+      "expected": "NOK",
+      "error_type": "flicker",
+      "edge_case": false,
+      "description": "Das Display wird zweimal für je 2 Frames stark abgedunkelt (bei 1,4 s und 2,6 s).",
+      "params": {},
+      "post": { "flicker": [{ "start_ms": 1400, "frames": 2 }, { "start_ms": 2600, "frames": 2 }] }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# Used by Dokploy (Compose service). Secrets (API keys) are set as
+# environment variables in Dokploy, never in this file.
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-200}
+    volumes:
+      # SQLite database and uploaded clips survive redeployments.
+      - backend-data:/app/data
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80"
+
+volumes:
+  backend-data:

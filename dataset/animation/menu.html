@@ -1,0 +1,171 @@
+<!doctype html>
+<!--
+  Parametric in-vehicle menu animation (reference for the benchmark dataset).
+
+  Every frame is a pure function of the time t (ms): window.renderAt(t).
+  This makes recordings frame-exact and reproducible (no real-time CSS transitions).
+
+  Usage
+  - Generator (dataset/generate.py): calls window.init(params) and window.renderAt(t) per frame.
+  - Manual preview: open the file in a browser. Parameters can be passed as JSON,
+    e.g. menu.html?p={"popupDelay":800,"hiddenItems":[3]}
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<title>Menu animation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 800px; height: 480px; overflow: hidden; background: #0b0f17; }
+  body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: #e8edf5; position: relative; }
+
+  #header {
+    position: absolute; left: 0; top: 0; width: 800px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; background: #121826; border-bottom: 1px solid #1f2838;
+    font-size: 20px; font-weight: 600;
+  }
+  #header .clock { font-weight: 400; color: #9aa6b8; }
+
+  #highlight {
+    position: absolute; left: 40px; width: 720px; height: 64px;
+    border-radius: 12px; background: #2f7cf6;
+  }
+
+  .item {
+    position: absolute; left: 40px; width: 720px; height: 64px;
+    display: flex; align-items: center; gap: 20px; padding: 0 24px;
+    font-size: 24px; transform-origin: center;
+  }
+  .item svg { width: 32px; height: 32px; flex: none; }
+  .item .chevron { margin-left: auto; color: #9aa6b8; font-size: 26px; }
+
+  #backdrop { position: absolute; inset: 0; background: #000; opacity: 0; }
+
+  #popup {
+    position: absolute; left: 190px; top: 130px; width: 420px; height: 220px;
+    border-radius: 18px; background: #1b2333; border: 1px solid #2c3850;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    opacity: 0; transform-origin: center;
+  }
+  #popup .icon { width: 72px; height: 72px; }
+  #popup .title { font-size: 26px; font-weight: 600; }
+  #popup .subtitle { font-size: 18px; color: #9aa6b8; }
+</style>
+</head>
+<body>
+  <div id="header"><span>Menü</span><span class="clock">12:30</span></div>
+  <div id="highlight"></div>
+  <div id="items"></div>
+  <div id="backdrop"></div>
+  <div id="popup">
+    <svg class="icon" viewBox="0 0 72 72" aria-hidden="true">
+      <circle cx="36" cy="36" r="34" fill="#22a06b" />
+      <path d="M21 37 l10 10 l20 -22" fill="none" stroke="#fff" stroke-width="6"
+            stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <div class="title"></div>
+    <div class="subtitle">Mobiltelefon</div>
+  </div>
+
+<script>
+  // ---------- Default parameters (= reference animation) ----------
+  const DEFAULTS = {
+    duration: 4000,          // total length (ms)
+    focusPath: [0, 1, 2],    // menu index focused at each step
+    focusTimes: [600, 1200], // start time of each focus move (ms)
+    highlightMs: 250,        // duration of one highlight move (ms)
+    highlightColor: "#2f7cf6",
+    selectAt: 1800,          // press feedback on the focused item (ms)
+    popupAt: 2000,           // nominal popup start (ms)
+    popupDelay: 0,           // extra delay added to popupAt (error injection)
+    popupMs: 300,            // popup fade/scale-in duration (ms)
+    popupIcon: true,
+    popupText: "Telefon verbunden",
+    hiddenItems: [],         // indices of menu items that are not rendered
+  };
+
+  const ITEMS = [
+    { label: "Navigation", color: "#4cc3ff", shape: "M16 3 L28 29 L16 22 L4 29 Z" },
+    { label: "Medien", color: "#ff8a4c", shape: "M6 6 H26 V26 H6 Z M12 11 V21 L21 16 Z" },
+    { label: "Telefon", color: "#22a06b", shape: "M9 4 H23 Q26 4 26 7 V25 Q26 28 23 28 H9 Q6 28 6 25 V7 Q6 4 9 4 Z" },
+    { label: "Klima", color: "#7aa7ff", shape: "M16 3 V29 M5 9 L27 23 M27 9 L5 23" },
+    { label: "Einstellungen", color: "#c0c8d6", shape: "M16 6 A10 10 0 1 0 16.01 6 Z M16 12 A4 4 0 1 0 16.01 12 Z" },
+  ];
+  const LIST_TOP = 84, ROW = 74;
+
+  let P = { ...DEFAULTS };
+  const el = (id) => document.getElementById(id);
+  const itemEls = [];
+
+  function buildItems() {
+    const root = el("items");
+    root.innerHTML = "";
+    itemEls.length = 0;
+    ITEMS.forEach((it, i) => {
+      const d = document.createElement("div");
+      d.className = "item";
+      d.style.top = (LIST_TOP + i * ROW) + "px";
+      const stroke = it.label === "Klima" ? `stroke="${it.color}" stroke-width="3" fill="none"` : `fill="${it.color}" fill-rule="evenodd"`;
+      d.innerHTML = `<svg viewBox="0 0 32 32"><path d="${it.shape}" ${stroke}/></svg>
+                     <span>${it.label}</span><span class="chevron">›</span>`;
+      d.style.visibility = P.hiddenItems.includes(i) ? "hidden" : "visible";
+      root.appendChild(d);
+      itemEls.push(d);
+    });
+  }
+
+  const clamp01 = (x) => Math.max(0, Math.min(1, x));
+  const easeInOut = (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+  const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+
+  function focusPosition(t) {
+    // Returns the (fractional) row index of the highlight at time t.
+    let pos = P.focusPath[0];
+    for (let s = 0; s < P.focusTimes.length; s++) {
+      const from = P.focusPath[s], to = P.focusPath[s + 1];
+      const k = P.highlightMs > 0 ? clamp01((t - P.focusTimes[s]) / P.highlightMs) : (t >= P.focusTimes[s] ? 1 : 0);
+      if (t >= P.focusTimes[s]) pos = from + (to - from) * easeInOut(k);
+    }
+    return pos;
+  }
+
+  window.init = function (params) {
+    P = { ...DEFAULTS, ...(params || {}) };
+    el("highlight").style.background = P.highlightColor;
+    el("popup").querySelector(".icon").style.visibility = P.popupIcon ? "visible" : "hidden";
+    el("popup").querySelector(".title").textContent = P.popupText;
+    buildItems();
+    window.renderAt(0);
+  };
+
+  window.renderAt = function (t) {
+    // Focus highlight
+    el("highlight").style.top = (LIST_TOP + focusPosition(t) * ROW) + "px";
+
+    // Press feedback on the last focused item
+    const pressed = P.focusPath[P.focusPath.length - 1];
+    const pk = clamp01((t - P.selectAt) / 200);
+    const scale = t >= P.selectAt ? 1 - 0.04 * Math.sin(Math.PI * pk) : 1;
+    itemEls.forEach((d, i) => { d.style.transform = i === pressed ? `scale(${scale})` : "none"; });
+
+    // Popup
+    const start = P.popupAt + P.popupDelay;
+    const k = P.popupMs > 0 ? clamp01((t - start) / P.popupMs) : (t >= start ? 1 : 0);
+    const e = t >= start ? easeOut(k) : 0;
+    el("popup").style.opacity = e;
+    el("popup").style.transform = `scale(${0.9 + 0.1 * e})`;
+    el("backdrop").style.opacity = 0.5 * e;
+  };
+
+  // ---------- Manual preview (loops in real time) ----------
+  const query = new URLSearchParams(location.search);
+  window.init(query.has("p") ? JSON.parse(query.get("p")) : {});
+  if (query.get("mode") !== "render") {
+    const t0 = performance.now();
+    const loop = (now) => { window.renderAt((now - t0) % (P.duration + 1000)); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+</script>
+</body>
+</html>

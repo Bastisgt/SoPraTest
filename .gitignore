@@ -1,0 +1,56 @@
+# ===== Secrets / environment =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ipynb_checkpoints/
+
+# ===== Node / TypeScript =====
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+
+# ===== Runtime data (uploads, DB, extracted frames) =====
+backend/data/
+*.db
+*.sqlite3
+dataset/frames/
+
+# ===== IDE / OS =====
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Logs =====
+logs/
+*.log
